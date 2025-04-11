@@ -1,8 +1,11 @@
 // components/Navbar.jsx
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
+  const { isAuthenticated } = useAuth();
+  
   // Navigation items with their paths
   const navItems = [
     { name: 'HOME', path: '/' },
@@ -13,6 +16,8 @@ const Navbar = () => {
     { name: 'PROJECTS', path: '/projects' },
     { name: 'CLUB SERVICES', path: '/club-services' },
     { name: 'PAST PRESIDENTS', path: '/past-presidents' },
+    // New navigation item for Budget/Management
+    { name: 'BUDGET/MANAGEMENT', path: isAuthenticated ? '/budget-dashboard' : '/budget-login' },
   ];
 
   return (
