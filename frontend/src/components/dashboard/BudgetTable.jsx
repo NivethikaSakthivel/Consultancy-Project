@@ -1,3 +1,5 @@
+//dashboard/BudgetTable.jsx
+
 import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
 

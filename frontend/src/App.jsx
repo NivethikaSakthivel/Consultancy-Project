@@ -1,6 +1,6 @@
 // App.jsx (updated)
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import About from './pages/About';
 import Directory from './pages/Directory';
@@ -40,9 +40,15 @@ const App = () => {
                     <Route path="/past-presidents" element={<PastPresidents />} />
                     <Route path="/budget-login" element={<BudgetLogin />} />
                     {/* Protected Route */}
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/budget-dashboard" element={<BudgetDashboard />} />
-                    </Route>
+                    <Route
+  path="/budget-dashboard"
+  element={
+    JSON.parse(localStorage.getItem('budgetAuth') || '{}').isAuthenticated
+      ? <BudgetDashboard />
+      : <Navigate to="/budget-login" />
+  }
+/>
+
                   </Routes>
                 </main>
                 <Footer />

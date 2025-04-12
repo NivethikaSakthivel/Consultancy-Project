@@ -180,7 +180,11 @@ const Calendar = () => {
   }
 
   return (
+    
     <div className="bg-white">
+      <div className="w-full bg-blue-900 text-white py-6 px-6">
+        <h1 className="text-2xl font-bold">ABOUT US</h1>
+      </div>
       {/* Calendar Content - Removed duplicate navigation elements */}
       <div className="container mx-auto py-8 px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
