@@ -1,23 +1,22 @@
-// components/ProtectedRoute.jsx
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = () => {
+const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
-  // Show loading state if authentication status is being checked
+  // Show loading state while checking authentication
   if (loading) {
     return <div className="text-center py-12">Loading...</div>;
   }
-
+  
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/budget-login" replace />;
+    return <Navigate to="/budget-login" />;
   }
-
-  // Render child routes if authenticated
-  return <Outlet />;
+  
+  // Render the protected component if authenticated
+  return children;
 };
 
 export default ProtectedRoute;

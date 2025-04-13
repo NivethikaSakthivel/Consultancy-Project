@@ -1,3 +1,5 @@
+// models/project.model.js
+
 module.exports = (sequelize, Sequelize) => {
     const Project = sequelize.define('project', {
       id: {

@@ -1,56 +1,90 @@
-// context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
-const AuthContext = createContext(null);
+// Create auth context
+const AuthContext = createContext();
+
+// Custom hook to use auth context
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check for existing authentication on component mount
   useEffect(() => {
-    // Check if user is authenticated on initial load
     const checkAuth = () => {
-      const authData = JSON.parse(localStorage.getItem('budgetAuth') || '{}');
-      
-      if (authData.isAuthenticated) {
-        setIsAuthenticated(true);
-        setUser({ id: authData.rotaryId });
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
+      try {
+        const authData = JSON.parse(localStorage.getItem('budgetAuth') || '{}');
+        
+        if (authData.isAuthenticated) {
+          // Optional: Check if the session has expired (e.g., after 30 minutes)
+          const currentTime = new Date().getTime();
+          const thirtyMinutes = 30 * 60 * 1000;
+          
+          if (authData.timestamp && currentTime - authData.timestamp > thirtyMinutes) {
+            // Session expired
+            localStorage.removeItem('budgetAuth');
+            setIsAuthenticated(false);
+            setUserData(null);
+          } else {
+            // Valid session
+            setIsAuthenticated(true);
+            setUserData(authData);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        localStorage.removeItem('budgetAuth');
       }
       
       setLoading(false);
     };
-    
+
     checkAuth();
   }, []);
 
-  const login = (userData) => {
-    localStorage.setItem('budgetAuth', JSON.stringify({
-      isAuthenticated: true,
-      rotaryId: userData.rotaryId,
-      timestamp: new Date().getTime()
-    }));
+  // Login function
+  const login = (rotaryId, password) => {
+    // In a real app, you would validate credentials against a backend
+    // For this example, we'll simulate a successful login with any input
     
+    // Create auth data with timestamp for session management
+    const authData = {
+      isAuthenticated: true,
+      rotaryId,
+      timestamp: new Date().getTime()
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('budgetAuth', JSON.stringify(authData));
+    
+    // Update state
     setIsAuthenticated(true);
-    setUser({ id: userData.rotaryId });
+    setUserData(authData);
+    
+    return true;
   };
 
+  // Logout function
   const logout = () => {
     localStorage.removeItem('budgetAuth');
     setIsAuthenticated(false);
-    setUser(null);
+    setUserData(null);
+  };
+
+  // Context value
+  const value = {
+    isAuthenticated,
+    userData,
+    loading,
+    login,
+    logout
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);
-
-export default AuthContext;

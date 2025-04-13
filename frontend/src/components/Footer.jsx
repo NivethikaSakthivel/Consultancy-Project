@@ -28,7 +28,7 @@ const Footer = () => {
           ))}
         </ul>
         <div className="mt-8 pt-4 border-t border-gray-700 text-sm text-gray-400">
-          <p>© {new Date().getFullYear()} Rotary Club of Tirupur. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Rotary Club of Avinashi. All rights reserved.</p>
         </div>
       </div>
     </footer>

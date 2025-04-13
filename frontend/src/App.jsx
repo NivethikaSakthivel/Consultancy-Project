@@ -1,6 +1,5 @@
-// App.jsx (updated)
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import About from './pages/About';
 import Directory from './pages/Directory';
@@ -39,16 +38,15 @@ const App = () => {
                     <Route path="/club-services" element={<ClubServices />} />
                     <Route path="/past-presidents" element={<PastPresidents />} />
                     <Route path="/budget-login" element={<BudgetLogin />} />
-                    {/* Protected Route */}
+                    {/* Protected Route for the Budget Dashboard */}
                     <Route
-  path="/budget-dashboard"
-  element={
-    JSON.parse(localStorage.getItem('budgetAuth') || '{}').isAuthenticated
-      ? <BudgetDashboard />
-      : <Navigate to="/budget-login" />
-  }
-/>
-
+                      path="/budget-dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <BudgetDashboard />
+                        </ProtectedRoute>
+                      }
+                    />
                   </Routes>
                 </main>
                 <Footer />

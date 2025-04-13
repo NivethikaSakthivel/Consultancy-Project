@@ -1,3 +1,4 @@
+// File: controllers/auth.controller.js
 const db = require('../models');
 const config = require('../config/auth.config');
 const User = db.users;

@@ -1,3 +1,5 @@
+// models/president.model.js
+
 module.exports = (sequelize, Sequelize) => {
     const President = sequelize.define('president', {
       id: {

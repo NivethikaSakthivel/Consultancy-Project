@@ -1,3 +1,4 @@
+// models/service.model.js
 module.exports = (sequelize, Sequelize) => {
     const Service = sequelize.define('service', {
       id: {

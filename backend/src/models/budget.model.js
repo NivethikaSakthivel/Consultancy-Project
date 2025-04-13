@@ -1,3 +1,5 @@
+// models/budget.model.js
+
 module.exports = (sequelize, Sequelize) => {
     const Budget = sequelize.define('budget_entry', {
       id: {

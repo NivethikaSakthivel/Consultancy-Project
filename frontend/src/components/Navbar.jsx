@@ -1,12 +1,12 @@
-// components/Navbar.jsx
 import React from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   
-  // Navigation items with their paths
+  // Navigation items with their paths (Budget/Management removed)
   const navItems = [
     { name: 'HOME', path: '/' },
     { name: 'ABOUT', path: '/about' },
@@ -16,9 +16,15 @@ const Navbar = () => {
     { name: 'PROJECTS', path: '/projects' },
     { name: 'CLUB SERVICES', path: '/club-services' },
     { name: 'PAST PRESIDENTS', path: '/past-presidents' },
-    // New navigation item for Budget/Management
-    { name: 'BUDGET/MANAGEMENT', path: isAuthenticated ? '/budget-dashboard' : '/budget-login' },
   ];
+
+  const handleLoginClick = () => {
+    if (isAuthenticated) {
+      logout();
+    } else {
+      navigate('/budget-login');
+    }
+  };
 
   return (
     <header>
@@ -37,8 +43,11 @@ const Navbar = () => {
             </svg>
           </div>
         </div>
-        <button className="bg-white text-blue-900 px-4 py-2 rounded-md flex items-center gap-2">
-          Login
+        <button 
+          onClick={handleLoginClick}
+          className="bg-white text-blue-900 px-4 py-2 rounded-md flex items-center gap-2"
+        >
+          {isAuthenticated ? 'Logout' : 'Login'}
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18l6-6-6-6"/>
           </svg>
@@ -51,10 +60,10 @@ const Navbar = () => {
           <img src="/api/placeholder/80/80" alt="Rotary Logo" className="h-16" />
           <div className="flex flex-col">
             <span className="text-xl font-bold text-blue-900">Rotary</span>
-            <span className="text-sm text-blue-900">Club of Tirupur</span>
+            <span className="text-sm text-blue-900">Club of Avinashi</span>
           </div>
         </Link>
-        <div className="flex items-center gap-4">
+        {/* <div className="flex items-center gap-4">
           <span>Download the Rotary India Mobile App</span>
           <button className="bg-gray-100 p-2 rounded-full">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -69,7 +78,7 @@ const Navbar = () => {
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Main navigation menu */}
@@ -89,6 +98,21 @@ const Navbar = () => {
               </NavLink>
             </li>
           ))}
+          {/* Show Dashboard link only if authenticated */}
+          {isAuthenticated && (
+            <li>
+              <NavLink 
+                to="/budget-dashboard" 
+                className={({ isActive }) => 
+                  isActive 
+                    ? "py-4 block text-blue-700 font-bold border-b-2 border-blue-700" 
+                    : "py-4 block hover:text-blue-700 font-medium"
+                }
+              >
+                DASHBOARD
+              </NavLink>
+            </li>
+          )}
         </ul>
       </nav>
     </header>
