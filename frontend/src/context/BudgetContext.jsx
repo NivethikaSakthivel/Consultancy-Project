@@ -1,12 +1,15 @@
+// src/components/context/BudgetContext.jsx
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const BudgetContext = createContext(null);
 
 export const BudgetProvider = ({ children }) => {
-  // Budget entries state
   const [budgetEntries, setBudgetEntries] = useState([]);
-  // Monthly budget (hardcoded for now)
-  const [monthlyBudget, setMonthlyBudget] = useState({
+
+  const [monthlyBudget] = useState({
     January: 25000,
     February: 25000,
     March: 28000,
@@ -21,7 +24,6 @@ export const BudgetProvider = ({ children }) => {
     December: 35000
   });
 
-  // Load budget entries from localStorage on initial render
   useEffect(() => {
     const savedEntries = localStorage.getItem('budgetEntries');
     if (savedEntries) {
@@ -29,59 +31,24 @@ export const BudgetProvider = ({ children }) => {
     }
   }, []);
 
-  // Save budget entries to localStorage whenever they change
   useEffect(() => {
-    // We can't store File objects in localStorage, so we need to save just the file info
-    const entriesToSave = budgetEntries.map(entry => {
-      const { proofFile, ...entryWithoutFile } = entry;
-      return entryWithoutFile;
-    });
-    
-    localStorage.setItem('budgetEntries', JSON.stringify(entriesToSave));
+    localStorage.setItem('budgetEntries', JSON.stringify(budgetEntries));
   }, [budgetEntries]);
 
-  // Add a new budget entry
-  const addBudgetEntry = (entry) => {
-    const newEntry = {
-      id: Date.now().toString(),
-      date: new Date().toISOString(),
-      ...entry
-    };
-    
-    // If we have a real backend, we would upload the file here
-    // For now, we'll just store the filename
-    
-    setBudgetEntries(prev => [...prev, newEntry]);
-  };
-
-  // Delete a budget entry
-  const deleteBudgetEntry = (id) => {
-    setBudgetEntries(prev => prev.filter(entry => entry.id !== id));
-  };
-
-  // Update a budget entry
-  const updateBudgetEntry = (id, updatedEntry) => {
-    setBudgetEntries(prev => 
-      prev.map(entry => entry.id === id ? { ...entry, ...updatedEntry } : entry)
-    );
-  };
-
-  // Get current month's budget
   const getCurrentMonthBudget = () => {
     const currentMonth = new Date().toLocaleString('default', { month: 'long' });
     return monthlyBudget[currentMonth] || 0;
   };
 
-  // Calculate total expenses for current month
   const getCurrentMonthExpenses = () => {
     const currentMonth = new Date().toLocaleString('default', { month: 'long' });
     const thisYear = new Date().getFullYear();
-    
+
     return budgetEntries.reduce((total, entry) => {
       const entryDate = new Date(entry.date);
       const entryMonth = entryDate.toLocaleString('default', { month: 'long' });
       const entryYear = entryDate.getFullYear();
-      
+
       if (entryMonth === currentMonth && entryYear === thisYear) {
         return total + Number(entry.actualAmount || 0);
       }
@@ -89,23 +56,154 @@ export const BudgetProvider = ({ children }) => {
     }, 0);
   };
 
-  // Simulate file download (in a real app, this would download from the server)
-  const downloadProofFile = (fileId) => {
-    alert(`In a production environment, this would download file: ${fileId}`);
-    // This is where you would actually download the file from your server
+  const generateEntryPDF = (entry) => {
+    const doc = new jsPDF();
+
+    doc.setFillColor(0, 51, 153);
+    doc.rect(0, 0, 210, 25, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.text('ROTARY CLUB OF AVINASHI', 105, 15, { align: 'center' });
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(20);
+    doc.text('Budget Entry Receipt', 105, 40, { align: 'center' });
+
+    const entryDate = entry.date ? new Date(entry.date).toLocaleDateString() : new Date().toLocaleDateString();
+    doc.setFontSize(12);
+    doc.text(`Date: ${entryDate}`, 20, 50);
+    doc.text(`Entry ID: ${entry.id || 'Draft'}`, 140, 50);
+
+    const tableData = [
+      ['Category:', entry.category || 'Not specified'],
+      ['Description:', entry.description || 'Not specified'],
+      ['Budget Amount:', `$${parseFloat(entry.budgetAmount || 0).toLocaleString()}`],
+      ['Actual Amount:', `$${parseFloat(entry.actualAmount || 0).toLocaleString()}`]
+    ];
+
+    const budgetAmount = parseFloat(entry.budgetAmount) || 0;
+    const actualAmount = parseFloat(entry.actualAmount) || 0;
+    const variance = budgetAmount - actualAmount;
+    const varianceText = variance >= 0 ?
+      `$${variance.toFixed(2)} (Under budget)` :
+      `$${Math.abs(variance).toFixed(2)} (Over budget)`;
+
+    tableData.push(['Variance:', varianceText]);
+
+    doc.autoTable({
+      startY: 60,
+      head: [['Field', 'Value']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [255, 195, 0],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [240, 240, 240]
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 50 },
+        1: { cellWidth: 120 }
+      }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 20;
+    doc.line(20, finalY, 100, finalY);
+    doc.text('Authorized Signature', 20, finalY + 5);
+
+    doc.setFontSize(10);
+    doc.text('Generated by Rotary Club Budget Management System', 105, 280, { align: 'center' });
+    doc.text(`Document ID: ${entry.id || Date.now()}`, 105, 285, { align: 'center' });
+
+    const filename = entry.id ? `budget-entry-${entry.id}.pdf` : 'budget-entry.pdf';
+    doc.save(filename);
+  };
+
+  const downloadProofFile = (entryId) => {
+    const entry = budgetEntries.find(entry => entry.id === entryId);
+
+    if (entry) {
+      generateEntryPDF(entry);
+    } else {
+      console.error(`Entry with ID ${entryId} not found`);
+    }
+  };
+
+  const generateSummaryPDF = (entries = budgetEntries) => {
+    const doc = new jsPDF();
+
+    doc.setFillColor(0, 51, 153);
+    doc.rect(0, 0, 210, 25, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.text('ROTARY CLUB OF AVINASHI', 105, 15, { align: 'center' });
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(20);
+    doc.text('Budget Summary Report', 105, 40, { align: 'center' });
+
+    const currentDate = new Date().toLocaleDateString();
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${currentDate}`, 20, 50);
+
+    const tableRows = entries.map(entry => [
+      new Date(entry.date).toLocaleDateString(),
+      entry.category,
+      entry.description,
+      `$${parseFloat(entry.budgetAmount || 0).toLocaleString()}`,
+      `$${parseFloat(entry.actualAmount || 0).toLocaleString()}`,
+      parseFloat(entry.budgetAmount || 0) - parseFloat(entry.actualAmount || 0) >= 0 ?
+        'Under Budget' : 'Over Budget'
+    ]);
+
+    doc.autoTable({
+      startY: 60,
+      head: [['Date', 'Category', 'Description', 'Budget', 'Actual', 'Status']],
+      body: tableRows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [255, 195, 0],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [240, 240, 240]
+      }
+    });
+
+    const totalBudget = entries.reduce((sum, entry) => sum + parseFloat(entry.budgetAmount || 0), 0);
+    const totalActual = entries.reduce((sum, entry) => sum + parseFloat(entry.actualAmount || 0), 0);
+    const totalVariance = totalBudget - totalActual;
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Budget: $${totalBudget.toLocaleString()}`, 20, finalY);
+    doc.text(`Total Actual: $${totalActual.toLocaleString()}`, 20, finalY + 7);
+    doc.text(`Total Variance: $${totalVariance.toLocaleString()} (${totalVariance >= 0 ? 'Under Budget' : 'Over Budget'})`, 20, finalY + 14);
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('Generated by Rotary Club Budget Management System', 105, 280, { align: 'center' });
+    doc.text(`Report ID: ${Date.now()}`, 105, 285, { align: 'center' });
+
+    doc.save('budget-summary.pdf');
   };
 
   return (
-    <BudgetContext.Provider 
-      value={{ 
-        budgetEntries, 
-        addBudgetEntry, 
-        deleteBudgetEntry, 
-        updateBudgetEntry,
+    <BudgetContext.Provider
+      value={{
+        budgetEntries,
         monthlyBudget,
         getCurrentMonthBudget,
         getCurrentMonthExpenses,
-        downloadProofFile
+        downloadProofFile,
+        generateEntryPDF,
+        generateSummaryPDF
       }}
     >
       {children}

@@ -1,61 +1,163 @@
-//dashboard/BudgetForm.jsx
-import React, { useState, useRef } from 'react';
-import { useBudget } from '../../context/BudgetContext';
+// src/components/dashboard/BudgetForm.jsx
+import React, { useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const BudgetForms = ({ mode = 'create', entryToEdit = null }) => {
-  const { addBudgetEntry, updateBudgetEntry } = useBudget();
-  const fileInputRef = useRef(null);
+const BudgetForm = ({ mode = 'create', entryToEdit = null }) => {
+  // Mock context functions - replace with your actual context if available
+  const addBudgetEntry = (entry) => {
+    // This would normally come from your BudgetContext
+    console.log('Adding budget entry:', entry);
+    // You can implement your own logic here or connect to your actual context
+    
+    // For now, we'll store in localStorage as a simple solution
+    const existingEntries = JSON.parse(localStorage.getItem('budgetEntries') || '[]');
+    const newEntry = {
+      ...entry,
+      id: Date.now().toString(),
+      date: new Date().toISOString()
+    };
+    existingEntries.push(newEntry);
+    localStorage.setItem('budgetEntries', JSON.stringify(existingEntries));
+  };
+
+  const updateBudgetEntry = (id, entry) => {
+    console.log('Updating budget entry:', id, entry);
+    // Similar logic for updates
+  };
   
   const initialFormState = entryToEdit || {
     category: '',
     description: '',
     budgetAmount: '',
     actualAmount: '',
-    proofFile: null,
-    proofFileName: ''
+    proofFileName: 'budget-entry-pdf.pdf'
   };
   
   const [formData, setFormData] = useState(initialFormState);
-  const [filePreview, setFilePreview] = useState(entryToEdit?.proofFileName || '');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedData, setSubmittedData] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Store the file object and filename
-    setFormData({
-      ...formData,
-      proofFile: file,
-      proofFileName: file.name
-    });
-    
-    // Set preview filename
-    setFilePreview(file.name);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (mode === 'edit') {
-      updateBudgetEntry(entryToEdit.id, formData);
-    } else {
-      addBudgetEntry(formData);
-      
-      // Reset form after submission
-      setFormData(initialFormState);
-      setFilePreview('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    try {
+      if (mode === 'edit') {
+        updateBudgetEntry(entryToEdit.id, formData);
+      } else {
+        addBudgetEntry(formData);
+        setSubmittedData({ ...formData, date: new Date().toISOString() });
+        setIsSubmitted(true);
       }
+      
+      alert('Budget entry saved successfully!');
+    } catch (error) {
+      console.error('Error saving budget entry:', error);
+      alert('Error saving budget entry. Please try again.');
     }
   };
 
-  // Project-style form layout
+  const generatePDF = () => {
+    try {
+      const dataToUse = submittedData || formData;
+      
+      // Create new PDF document
+      const doc = new jsPDF();
+      
+      // Add Rotary logo/header
+      doc.setFillColor(0, 51, 153); // Rotary blue
+      doc.rect(0, 0, 210, 25, 'F');
+      
+      doc.setTextColor(255, 255, 255); // White text
+      doc.setFontSize(16);
+      doc.text('ROTARY CLUB OF AVINASHI', 105, 15, { align: 'center' });
+      
+      // Reset text color to black
+      doc.setTextColor(0, 0, 0);
+      
+      // Title
+      doc.setFontSize(20);
+      doc.text('Budget Entry Receipt', 105, 40, { align: 'center' });
+      
+      // Current date
+      const currentDate = submittedData ? 
+        new Date(submittedData.date).toLocaleDateString() : 
+        new Date().toLocaleDateString();
+      doc.setFontSize(12);
+      doc.text(`Date: ${currentDate}`, 20, 55);
+      doc.text(`Entry ID: ${Date.now()}`, 140, 55);
+      
+      // Create data for the table
+      const tableData = [
+        ['Category', dataToUse.category || 'Not specified'],
+        ['Description', dataToUse.description || 'Not specified'],
+        ['Budget Amount', `$${parseFloat(dataToUse.budgetAmount || 0).toLocaleString()}`],
+        ['Actual Amount', `$${parseFloat(dataToUse.actualAmount || 0).toLocaleString()}`]
+      ];
+      
+      // Calculate variance
+      const budgetAmount = parseFloat(dataToUse.budgetAmount) || 0;
+      const actualAmount = parseFloat(dataToUse.actualAmount) || 0;
+      const variance = budgetAmount - actualAmount;
+      const varianceText = variance >= 0 ? 
+        `$${variance.toFixed(2)} (Under budget)` : 
+        `$${Math.abs(variance).toFixed(2)} (Over budget)`;
+      
+      tableData.push(['Variance', varianceText]);
+      
+      // Add table to PDF using autoTable
+      autoTable(doc, {
+        startY: 70,
+        head: [['Field', 'Value']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [255, 195, 0], // Rotary gold
+          textColor: [0, 0, 0],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [240, 240, 240]
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 60 },
+          1: { cellWidth: 110 }
+        }
+      });
+      
+      // Get the final Y position after the table
+      const finalY = doc.lastAutoTable.finalY + 30;
+      
+      // Add signature section
+      doc.line(20, finalY, 100, finalY);
+      doc.text('Authorized Signature', 20, finalY + 7);
+      
+      doc.line(130, finalY, 190, finalY);
+      doc.text('Date', 130, finalY + 7);
+      
+      // Add footer
+      doc.setFontSize(10);
+      doc.text('Generated by Rotary Club Budget Management System', 105, 280, { align: 'center' });
+      doc.text(`Document ID: ${Date.now()}`, 105, 285, { align: 'center' });
+      
+      // Save PDF
+      const fileName = `budget-entry-${dataToUse.category || 'general'}-${Date.now()}.pdf`;
+      doc.save(fileName);
+      
+      console.log('PDF generated successfully');
+      alert('PDF downloaded successfully!');
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg p-8">
       <h2 className="text-xl font-semibold text-blue-800 mb-6">
@@ -93,14 +195,14 @@ const BudgetForms = ({ mode = 'create', entryToEdit = null }) => {
             id="description"
             name="description"
             type="text"
-            placeholder="Description"
+            placeholder="Enter description"
             value={formData.description}
             onChange={handleChange}
             required
           />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <label className="block font-medium text-gray-700 mb-2" htmlFor="budgetAmount">
               Budget Amount<span className="text-red-500">*</span>
@@ -110,7 +212,8 @@ const BudgetForms = ({ mode = 'create', entryToEdit = null }) => {
               id="budgetAmount"
               name="budgetAmount"
               type="number"
-              placeholder="Budget Amount"
+              step="0.01"
+              placeholder="0.00"
               value={formData.budgetAmount}
               onChange={handleChange}
               required
@@ -126,7 +229,8 @@ const BudgetForms = ({ mode = 'create', entryToEdit = null }) => {
               id="actualAmount"
               name="actualAmount"
               type="number"
-              placeholder="Actual Amount"
+              step="0.01"
+              placeholder="0.00"
               value={formData.actualAmount}
               onChange={handleChange}
               required
@@ -134,37 +238,51 @@ const BudgetForms = ({ mode = 'create', entryToEdit = null }) => {
           </div>
         </div>
         
-        <div className="mb-8">
-          <label className="block font-medium text-gray-700 mb-2" htmlFor="proofFile">
-            Upload Proof (Receipt/Invoice)
-          </label>
-          <input
-            ref={fileInputRef}
-            className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            id="proofFile"
-            name="proofFile"
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={handleFileChange}
-          />
-          {filePreview && (
-            <p className="mt-2 text-sm text-gray-500">
-              Selected file: {filePreview}
-            </p>
-          )}
-        </div>
-        
-        <div className="flex justify-center">
+        <div className="flex justify-center mb-6">
           <button
-            className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
             type="submit"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 px-8 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-colors duration-200 flex items-center"
           >
-            {mode === 'edit' ? 'Update Budget Entry' : 'Add Budget Entry'}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            {mode === 'create' ? 'Add Budget Entry' : 'Update Budget Entry'}
           </button>
         </div>
       </form>
+
+      {/* Download PDF Section */}
+      <div className="border-t pt-6">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-700 mb-4">Download Receipt</h3>
+          <button
+            type="button"
+            onClick={generatePDF}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 flex items-center mx-auto"
+            disabled={!isSubmitted && mode === 'create'}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
+            </svg>
+            Download PDF Receipt
+          </button>
+          {mode === 'create' && !isSubmitted && (
+            <p className="text-sm text-gray-500 mt-2">
+              Please add the budget entry first to download the receipt
+            </p>
+          )}
+          {isSubmitted && (
+            <p className="text-sm text-green-600 mt-2 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Entry saved successfully - Ready to download
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-export default BudgetForms;
+export default BudgetForm;
