@@ -13,21 +13,51 @@ const ServicesManager = () => {
     contact: '',
     phone: '',
     email: '',
-    address: ''
+    address: '',
+    image: ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
+  const [selectedFileName, setSelectedFileName] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB');
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      setSelectedFileName(file.name);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64String = e.target.result;
+        setFormData(prev => ({ ...prev, image: base64String }));
+        setImagePreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Basic validation
-    if (!formData.title || !formData.description) {
-      setError('Title and description are required');
+    // Basic validation - all fields are now required
+    if (!formData.title || !formData.description || !formData.contact || !formData.phone || !formData.email || !formData.address) {
+      setError('All fields are required');
       return;
     }
 
@@ -65,6 +95,8 @@ const ServicesManager = () => {
       email: service.email || '',
       address: service.address || ''
     });
+    setImagePreview(service.image || '');
+    setSelectedFileName('');
   };
 
   const handleDelete = (id) => {
@@ -85,11 +117,17 @@ const ServicesManager = () => {
       contact: '',
       phone: '',
       email: '',
-      address: ''
+      address: '',
+      image: ''
     });
     setIsEditing(false);
     setEditingId(null);
     setError('');
+    setImagePreview('');
+    setSelectedFileName('');
+    // Reset file input
+    const fileInput = document.getElementById('image');
+    if (fileInput) fileInput.value = '';
   };
 
   return (
@@ -129,7 +167,7 @@ const ServicesManager = () => {
             </div>
             <div>
               <label htmlFor="contact" className="block text-gray-700 font-medium mb-2">
-                Contact Person
+                Contact Person*
               </label>
               <input
                 type="text"
@@ -138,6 +176,7 @@ const ServicesManager = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={formData.contact}
                 onChange={handleInputChange}
+                required
               />
             </div>
           </div>
@@ -157,10 +196,48 @@ const ServicesManager = () => {
             ></textarea>
           </div>
 
+          {/* Image Upload Section */}
+          <div className="mb-4">
+            <label htmlFor="image" className="block text-gray-700 font-medium mb-2">
+              Service Image
+            </label>
+            <div className="flex items-center gap-4">
+              <label htmlFor="image" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors">
+                Choose File
+              </label>
+              <span className="text-gray-600 text-sm">
+                {selectedFileName || 'No file chosen'}
+              </span>
+            </div>
+            <input
+              type="file"
+              id="image"
+              name="image"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Supported formats: JPG, PNG, GIF. Max size: 5MB
+            </p>
+            
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                <img
+                  src={imagePreview}
+                  alt="Service preview"
+                  className="w-32 h-32 object-cover rounded-md border border-gray-300"
+                />
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label htmlFor="phone" className="block text-gray-700 font-medium mb-2">
-                Phone
+                Phone*
               </label>
               <input
                 type="text"
@@ -169,11 +246,12 @@ const ServicesManager = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={formData.phone}
                 onChange={handleInputChange}
+                required
               />
             </div>
             <div>
               <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
-                Email
+                Email*
               </label>
               <input
                 type="email"
@@ -182,11 +260,12 @@ const ServicesManager = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={formData.email}
                 onChange={handleInputChange}
+                required
               />
             </div>
             <div>
               <label htmlFor="address" className="block text-gray-700 font-medium mb-2">
-                Address
+                Address*
               </label>
               <input
                 type="text"
@@ -195,6 +274,7 @@ const ServicesManager = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={formData.address}
                 onChange={handleInputChange}
+                required
               />
             </div>
           </div>
@@ -225,44 +305,82 @@ const ServicesManager = () => {
         <h3 className="text-lg font-semibold text-blue-900 mb-4">Club Services</h3>
         
         {services.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th className="py-3 px-4 bg-gray-100 text-left text-sm font-medium text-gray-600 uppercase">Title</th>
-                  <th className="py-3 px-4 bg-gray-100 text-left text-sm font-medium text-gray-600 uppercase">Description</th>
-                  <th className="py-3 px-4 bg-gray-100 text-left text-sm font-medium text-gray-600 uppercase">Contact</th>
-                  <th className="py-3 px-4 bg-gray-100 text-center text-sm font-medium text-gray-600 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {services.map(service => (
-                  <tr key={service.id}>
-                    <td className="py-3 px-4 text-sm">{service.title}</td>
-                    <td className="py-3 px-4 text-sm">
-                      {service.description.length > 100 ? `${service.description.substring(0, 100)}...` : service.description}
-                    </td>
-                    <td className="py-3 px-4 text-sm">{service.contact}</td>
-                    <td className="py-3 px-4 text-sm text-center">
-                      <div className="flex justify-center gap-3">
-                        <button
-                          onClick={() => handleEdit(service)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(service.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Delete
-                        </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {services.map(service => (
+              <div key={service.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                {/* Service Image */}
+                <div className="h-48 bg-gray-100 rounded-t-lg overflow-hidden">
+                  {service.image ? (
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-2 bg-blue-200 rounded-full flex items-center justify-center">
+                          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                          </svg>
+                        </div>
+                        <p className="text-sm text-blue-600 font-medium">Service</p>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Service Content */}
+                <div className="p-4">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-2">{service.title}</h4>
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-3">
+                    {service.description.length > 120 
+                      ? `${service.description.substring(0, 120)}...` 
+                      : service.description}
+                  </p>
+                  
+                  {/* Contact Info */}
+                  <div className="space-y-1 mb-4">
+                    {service.contact && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Contact:</span> {service.contact}
+                      </p>
+                    )}
+                    {service.phone && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Phone:</span> {service.phone}
+                      </p>
+                    )}
+                    {service.email && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Email:</span> {service.email}
+                      </p>
+                    )}
+                    {service.address && (
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Address:</span> {service.address}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(service)}
+                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-3 rounded-md transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(service.id)}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm py-2 px-3 rounded-md transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-8">
