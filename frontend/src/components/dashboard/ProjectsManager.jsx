@@ -14,14 +14,53 @@ const ProjectsManager = () => {
     location: '',
     coordinator: '',
     status: 'Planning',
-    budget: ''
+    budget: '',
+    image: null // Add image field
   });
+  const [imagePreview, setImagePreview] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle image file selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB');
+        return;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Image = event.target.result;
+        setFormData(prev => ({ ...prev, image: base64Image }));
+        setImagePreview(base64Image);
+        setError(''); // Clear any previous errors
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove selected image
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, image: null }));
+    setImagePreview(null);
+    // Reset file input
+    const fileInput = document.getElementById('image');
+    if (fileInput) fileInput.value = '';
   };
 
   const handleSubmit = (e) => {
@@ -65,8 +104,14 @@ const ProjectsManager = () => {
       location: project.location || '',
       coordinator: project.coordinator || '',
       status: project.status || 'Planning',
-      budget: project.budget || ''
+      budget: project.budget || '',
+      image: project.image || null
     });
+    
+    // Set image preview if project has an image
+    if (project.image) {
+      setImagePreview(project.image);
+    }
   };
 
   const handleDelete = (id) => {
@@ -88,11 +133,17 @@ const ProjectsManager = () => {
       location: '',
       coordinator: '',
       status: 'Planning',
-      budget: ''
+      budget: '',
+      image: null
     });
+    setImagePreview(null);
     setIsEditing(false);
     setEditingId(null);
     setError('');
+    
+    // Reset file input
+    const fileInput = document.getElementById('image');
+    if (fileInput) fileInput.value = '';
   };
 
   const statusOptions = ['Planning', 'Upcoming', 'Active', 'Completed', 'On Hold'];
@@ -160,6 +211,45 @@ const ProjectsManager = () => {
               onChange={handleInputChange}
               required
             ></textarea>
+          </div>
+
+          {/* Image Upload Section */}
+          <div className="mb-4">
+            <label htmlFor="image" className="block text-gray-700 font-medium mb-2">
+              Project Image
+            </label>
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <input
+                  type="file"
+                  id="image"
+                  name="image"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Supported formats: JPG, PNG, GIF. Max size: 5MB
+                </p>
+              </div>
+              
+              {imagePreview && (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-24 h-24 object-cover rounded-md border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -251,6 +341,7 @@ const ProjectsManager = () => {
             <table className="min-w-full bg-white">
               <thead>
                 <tr>
+                  <th className="py-3 px-4 bg-gray-100 text-left text-sm font-medium text-gray-600 uppercase">Image</th>
                   <th className="py-3 px-4 bg-gray-100 text-left text-sm font-medium text-gray-600 uppercase">Title</th>
                   <th className="py-3 px-4 bg-gray-100 text-left text-sm font-medium text-gray-600 uppercase">Status</th>
                   <th className="py-3 px-4 bg-gray-100 text-left text-sm font-medium text-gray-600 uppercase">Date</th>
@@ -261,6 +352,21 @@ const ProjectsManager = () => {
               <tbody className="divide-y divide-gray-200">
                 {projects.map(project => (
                   <tr key={project.id}>
+                    <td className="py-3 px-4 text-sm">
+                      {project.image ? (
+                        <img
+                          src={project.image}
+                          alt={project.title}
+                          className="w-12 h-12 object-cover rounded-md border border-gray-300"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-sm">{project.title}</td>
                     <td className="py-3 px-4 text-sm">
                       <span 

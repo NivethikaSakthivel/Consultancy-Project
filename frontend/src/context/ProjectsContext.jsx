@@ -1,4 +1,4 @@
-// context/ProjectsContext.jsx
+// src/components/context/ProjectsContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ProjectsContext = createContext(null);
