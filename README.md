@@ -1,136 +1,132 @@
-```markdown
+---
+
+````markdown
 # Avinashi Rotary Club - Official Website 🌐
 
-This is the official website of **Avinashi Rotary Club**, developed as a consultancy project to provide an elegant and functional online presence. The site showcases the club’s objectives, members, events, gallery, and community service activities. It is a full-stack web application built using **ReactJS** for the frontend, **Node.js + Express.js** for the backend, and **MySQL** for data storage.
-
-## 🚀 Tech Stack
-
-### Frontend
-- **ReactJS** (with functional components and hooks)
-- **Axios** for API communication
-- **Tailwind CSS / Bootstrap** (choose the one you used) for styling
-
-### Backend
-- **Node.js**
-- **Express.js**
-- **RESTful APIs**
-- **CORS** and **body-parser**
-
-### Database
-- **MySQL**
-- Tables include:
-  - `members`
-  - `events`
-  - `gallery`
-  - `news`
-  - `contact_queries`
-  - `admin_users`
+## Project Overview
+This is the official website of **Avinashi Rotary Club**, built to showcase its members, initiatives, events, and social activities. It is a full-stack web application developed using **ReactJS** (frontend), **Node.js + Express.js** (backend), and **MySQL** (database).
 
 ---
 
-## 🔧 Features
-
-- Responsive and mobile-friendly design
-- Admin login and content management (CRUD)
-- Events listing and updates
-- Member directory
-- Image gallery
-- Contact form with backend integration
-- News/Announcements section
-- Secure routing and data validation
+## Features
+- Dynamic Admin Panel (CRUD operations)
+- Member Directory with Role-Based Access
+- Event Management & Announcements
+- Image Gallery Integration
+- Contact Form with Backend Handling
+- Responsive UI for all screen sizes
 
 ---
 
-## 📂 Project Structure
+## Tech Stack
 
-### Frontend (`/client`)
-```
+### 🖥️ Frontend
+- ReactJS
+- Axios
+- Tailwind CSS / Bootstrap (whichever used)
 
-client/
-├── public/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   ├── App.js
-│   ├── index.js
-│   └── services/
-│       └── api.js
+### ⚙️ Backend
+- Node.js
+- Express.js
+- REST API
 
-```
+### 🗄️ Database
+- MySQL
 
-### Backend (`/server`)
-```
+---
 
-server/
-├── config/
-│   └── db.js
-├── controllers/
-├── routes/
-├── models/
-├── server.js
-└── .env
+## Installation
 
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/your-username/avinashi-rotary-website.git
+   cd avinashi-rotary-website
 ````
 
----
+2. **Install Backend Dependencies:**
 
-## ⚙️ Setup and Installation
+   ```bash
+   cd server
+   npm install
+   ```
 
-### Prerequisites
-- Node.js & npm
-- MySQL server
+3. **Configure Environment Variables:**
+   Create a `.env` file inside the `server` directory:
 
-### 1. Clone the Repository
+   ```env
+   PORT=5000
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=your_password
+   DB_NAME=rotary_db
+   ```
 
-```bash
-git clone https://github.com/yourusername/avinashi-rotary-website.git
-cd avinashi-rotary-website
-````
+4. **Run the Backend Server:**
 
-### 2. Backend Setup
+   ```bash
+   npm start
+   ```
 
-```bash
-cd server
-npm install
-```
+5. **Install Frontend Dependencies:**
 
-* Configure `.env`:
+   ```bash
+   cd ../client
+   npm install
+   ```
 
-```env
-PORT=5000
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=yourpassword
-DB_NAME=rotarydb
-```
+6. **Run the Frontend:**
 
-* Run backend server:
-
-```bash
-npm start
-```
-
-### 3. Frontend Setup
-
-```bash
-cd client
-npm install
-npm start
-```
-
-The app will run at: `http://localhost:3000`
+   ```bash
+   npm start
+   ```
 
 ---
 
-## 🗄️ Database
+## Usage
 
-Import the MySQL schema from `server/db/rotary_schema.sql` using any MySQL client (like phpMyAdmin, MySQL Workbench, or command-line).
+1. **Access the Application:**
+
+   * Frontend: `http://localhost:3000`
+   * Backend API: `http://localhost:5000/api`
+
+2. **Setup Database:**
+
+   * Import MySQL schema provided in `server/db/rotary_schema.sql`
+
+3. **Login to Admin Panel:**
+
+   * Use default credentials or register through API
 
 ---
 
-## 🙌 Acknowledgements
+## Project Structure
 
-This project was developed as part of a professional consultancy assignment.
-Special thanks to the **Avinashi Rotary Club** team for their support and guidance throughout development.
+```
+avinashi-rotary-website/
+├── client/                # ReactJS Frontend
+│   ├── public/
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       └── App.js
+├── server/                # Node.js + Express Backend
+│   ├── routes/
+│   ├── controllers/
+│   ├── config/
+│   └── server.js
+├── README.md
+├── .env
+└── package.json
+```
+
+---
+
+## Libraries Used
+
+* `ReactJS` – Frontend library
+* `Axios` – API communication
+* `Node.js` & `Express.js` – Backend & routing
+* `MySQL` – Relational database
+* `cors`, `dotenv`, `body-parser` – Middleware & configuration
 
 ---
